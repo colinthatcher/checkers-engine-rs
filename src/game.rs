@@ -1,4 +1,4 @@
-use std::{iter::empty, vec};
+use std::vec;
 
 // default empty position string
 const EMPTY_POS: &str = "empty";
@@ -31,6 +31,7 @@ impl Checkers {
         checkers.set_turn(&checkers.get_player1());
         checkers.assign_side(0, checkers.get_player1());
         checkers.assign_side(7, checkers.get_player2());
+        checkers.initialize_board();
         return checkers;
     }
 
@@ -74,6 +75,11 @@ impl Checkers {
         self.board.assign_side(side, owner);
     }
 
+    fn initialize_board(&mut self) {
+        self.board
+            .initialize_board(self.get_player1(), self.get_player2());
+    }
+
     fn check_start() {}
     fn start() {}
     fn check_move() {}
@@ -88,23 +94,21 @@ pub struct CheckersBoard {
 }
 
 impl CheckersBoard {
-    pub fn init() -> CheckersBoard {
+    fn init() -> CheckersBoard {
         let board = CheckersBoard {
             board: vec![vec![Position::init(); 8]; 8],
         };
         return board;
     }
 
-    pub fn is_board_ready(&self) -> bool {
+    /// Validate that CheckersBoard is correctly setup for a game
+    fn is_board_ready(&self) -> bool {
+        // check that the first row has a distinct owner
         let mut check_first_row = false;
         let mut first_row_owner = EMPTY_POS.to_string();
-        let mut check_last_row = false;
-        let mut last_row_owner = EMPTY_POS.to_string();
         let first_row = &self.board[0];
         for col in first_row {
-            println!("first row: {:?}", col);
-            // validate first row's positions have ownership and are empty
-            if col.owner == EMPTY_POS || col.occupant != EMPTY_POS {
+            if col.owner == EMPTY_POS || col.occupant.owner != EMPTY_POS {
                 // fail validation
                 check_first_row = false;
                 break;
@@ -120,11 +124,12 @@ impl CheckersBoard {
             }
             check_first_row = true;
         }
+        // check that the last row has a distinct owner
+        let mut check_last_row = false;
+        let mut last_row_owner = EMPTY_POS.to_string();
         let last_row = &self.board[self.board.len() - 1];
         for col in last_row {
-            println!("last row: {:?}", col);
-            // validate first row's positions have ownership and are empty
-            if col.owner == EMPTY_POS || col.occupant != EMPTY_POS {
+            if col.owner == EMPTY_POS || col.occupant.owner != EMPTY_POS {
                 // fail validation
                 check_last_row = false;
                 break;
@@ -140,11 +145,10 @@ impl CheckersBoard {
             }
             check_last_row = true;
         }
-
         return check_first_row && check_last_row;
     }
 
-    pub fn assign_side(&mut self, side: i32, owner: String) {
+    fn assign_side(&mut self, side: i32, owner: String) {
         for row_index in 0..self.board.len() {
             if row_index != side.try_into().unwrap() {
                 // if not side, skip logic
@@ -152,6 +156,31 @@ impl CheckersBoard {
             }
             for col_index in 0..self.board[row_index].len() {
                 self.board[row_index][col_index].owner = owner.clone();
+            }
+        }
+    }
+
+    /// Initizlize pieces onto the game board based on information already setup.
+    /// This method requries side ownership to have already be assigned.
+    fn initialize_board(&mut self, player1: String, player2: String) {
+        // validate side ownership
+        if !self.is_board_ready() {
+            return;
+        }
+        // validate player1 & player2 aren't empty
+        if player1 == "" || player2 == "" {
+            return;
+        }
+        // update board with CheckersPieces
+        for row_index in 0..self.board.len() {
+            if row_index == 0 || row_index == 1 {
+                for col_index in 0..self.board[row_index].len() {
+                    self.board[row_index][col_index].occupant.owner = player1.clone();
+                }
+            } else if row_index == 6 || row_index == 7 {
+                for col_index in 0..self.board[row_index].len() {
+                    self.board[row_index][col_index].occupant.owner = player2.clone();
+                }
             }
         }
     }
@@ -164,14 +193,30 @@ impl CheckersBoard {
 #[derive(Debug, Clone)]
 struct Position {
     owner: String,
-    occupant: String,
+    occupant: CheckerPiece,
 }
 
 impl Position {
     pub fn init() -> Position {
         Position {
             owner: EMPTY_POS.to_string(),
-            occupant: EMPTY_POS.to_string(),
+            occupant: CheckerPiece::init(),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct CheckerPiece {
+    kinged: bool,
+    owner: String,
+}
+
+impl CheckerPiece {
+    fn init() -> CheckerPiece {
+        let piece = CheckerPiece {
+            kinged: false,
+            owner: EMPTY_POS.to_string(),
+        };
+        return piece;
     }
 }
