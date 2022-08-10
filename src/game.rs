@@ -77,15 +77,31 @@ impl Checkers {
 
     fn initialize_board(&mut self) {
         self.board
-            .initialize_board(self.get_player1(), self.get_player2());
+            .initialize_board_pieces(self.get_player1(), self.get_player2());
     }
 
-    fn check_start() {}
+    pub fn is_ready_to_start(&self) -> bool {
+        return self.board.is_board_ownership_ready() && self.board.is_board_pieces_ready();
+    }
+
     fn start() {}
     fn check_move() {}
     fn move_piece() {}
     fn king_me() {}
     fn complete() {}
+
+    pub fn print_board(&self) {
+        for row in &self.board.board {
+            print!("[");
+            for (i, col) in row.iter().enumerate() {
+                print!(" {owner:>8} ", owner = col.occupant.owner);
+                if i < row.len() - 1 {
+                    print!("|")
+                }
+            }
+            print!("]\n")
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -102,13 +118,13 @@ impl CheckersBoard {
     }
 
     /// Validate that CheckersBoard is correctly setup for a game
-    fn is_board_ready(&self) -> bool {
+    fn is_board_ownership_ready(&self) -> bool {
         // check that the first row has a distinct owner
         let mut check_first_row = false;
         let mut first_row_owner = EMPTY_POS.to_string();
         let first_row = &self.board[0];
         for col in first_row {
-            if col.owner == EMPTY_POS || col.occupant.owner != EMPTY_POS {
+            if col.owner == EMPTY_POS {
                 // fail validation
                 check_first_row = false;
                 break;
@@ -129,7 +145,7 @@ impl CheckersBoard {
         let mut last_row_owner = EMPTY_POS.to_string();
         let last_row = &self.board[self.board.len() - 1];
         for col in last_row {
-            if col.owner == EMPTY_POS || col.occupant.owner != EMPTY_POS {
+            if col.owner == EMPTY_POS {
                 // fail validation
                 check_last_row = false;
                 break;
@@ -160,13 +176,32 @@ impl CheckersBoard {
         }
     }
 
+    fn get_player_piece_count(&self, player: String) -> Vec<CheckerPiece> {
+        let mut player_pieces: Vec<CheckerPiece> = vec![];
+        for row in &self.board {
+            for col in row {
+                if player == col.occupant.owner {
+                    player_pieces.push(col.occupant.clone());
+                }
+            }
+        }
+        return player_pieces;
+    }
+
+    fn is_board_pieces_ready(&self) -> bool {
+        let player1_pieces = self.get_player_piece_count(self.board[0][0].owner.clone());
+        let player2_pieces =
+            self.get_player_piece_count(self.board[self.board.len() - 1][0].owner.clone());
+        if player1_pieces.len() != 16 || player2_pieces.len() != 16 {
+            // initial piece count should equal 16
+            return false;
+        }
+        return true;
+    }
+
     /// Initizlize pieces onto the game board based on information already setup.
     /// This method requries side ownership to have already be assigned.
-    fn initialize_board(&mut self, player1: String, player2: String) {
-        // validate side ownership
-        if !self.is_board_ready() {
-            return;
-        }
+    fn initialize_board_pieces(&mut self, player1: String, player2: String) {
         // validate player1 & player2 aren't empty
         if player1 == "" || player2 == "" {
             return;
