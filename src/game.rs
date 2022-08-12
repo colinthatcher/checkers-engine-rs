@@ -39,12 +39,12 @@ impl Checkers {
         checkers.initialize_board();
 
         // ensure everything is setup properly
-        // if checkers.get_player1() == EMPTY_POS || checkers.get_player2() == EMPTY_POS {
-        //     return None;
-        // }
-        // if !checkers.is_ready_to_start() {
-        //     return None;
-        // }
+        if checkers.get_player1() == EMPTY_POS || checkers.get_player2() == EMPTY_POS {
+            return None;
+        }
+        if !checkers.is_ready_to_start() {
+            return None;
+        }
 
         // play ball
         return Some(checkers);
@@ -99,15 +99,6 @@ impl Checkers {
         return self.board.is_board_ownership_ready() && self.board.is_board_pieces_ready();
     }
 
-    // fuck move is a language keyword
-    // I _think_ just `self` is the real object (mu)
-    // you know idk
-    // LULW
-    // the compile just lets you know
-    // WAIT
-    // You can't use just `self`. I'm memeing
-    // `&self` is an immuable pointer to the object
-    // `&mut self` is a mutable pointer to the object <- love this comment noah was here 8/10/2
     pub fn move_piece(
         &mut self,
         player: String,
@@ -262,7 +253,7 @@ impl CheckersBoard {
         let player1_pieces = self.get_player_piece(self.board[0][0].owner.clone());
         let player2_pieces =
             self.get_player_piece(self.board[self.board.len() - 1][0].owner.clone());
-        if player1_pieces.len() != 8 || player2_pieces.len() != 8 {
+        if player1_pieces.len() != 12 || player2_pieces.len() != 12 {
             // initial piece count should equal 16
             return false;
         }
