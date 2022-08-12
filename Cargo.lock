@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "checkers-engine"
+name = "checkers-engine-rs"
 version = "0.1.0"
