@@ -11,7 +11,7 @@ use std::vec;
 
 #[derive(Debug)]
 pub struct CheckersBoard {
-    board: Vec<Vec<Position>>,
+    pub positions: Vec<Vec<Position>>,
 }
 
 impl CheckersBoard {
@@ -29,34 +29,26 @@ impl CheckersBoard {
             board.push(row);
             is_blocked = !is_blocked;
         }
-        return CheckersBoard { board: board };
+        return CheckersBoard { positions: board };
     }
 
     fn get_board_max_cord(&self) -> i32 {
-        return (self.board.len() - 1) as i32;
+        return (self.positions.len() - 1) as i32;
     }
 
     pub fn to_string(&self) -> String {
         let mut board_string = String::new();
-        for row in &self.board {
-            // print!("[");
+        for row in &self.positions {
             board_string.push_str("[");
             for (i, col) in row.iter().enumerate() {
                 if col.blocked {
-                    // print!(" {piece_cord:?} -------- ", piece_cord = col.occupant.loc);
                     board_string.push_str(
-                        format!(" {piece_cord:?} -------- ", piece_cord = col.occupant.loc,)
-                            .as_str(),
+                        format!(" {piece_cord:?} ----- ", piece_cord = col.occupant.loc,).as_str(),
                     );
                 } else {
-                    // print!(
-                    //     " {piece_cord:?} {owner:>8} ",
-                    //     owner = col.occupant.owner,
-                    //     piece_cord = col.occupant.loc
-                    // );
                     board_string.push_str(
                         format!(
-                            " {piece_cord:?} {owner:>8} ",
+                            " {piece_cord:?} {owner:>5} ",
                             owner = col.occupant.owner,
                             piece_cord = col.occupant.loc
                         )
@@ -64,11 +56,9 @@ impl CheckersBoard {
                     );
                 }
                 if i < row.len() - 1 {
-                    // print!("|")
                     board_string.push_str("|");
                 }
             }
-            // print!("]\n")
             board_string.push_str("]\n");
         }
         return board_string;
@@ -79,7 +69,7 @@ impl CheckersBoard {
         // check that the first row has a distinct owner
         let mut check_first_row = false;
         let mut first_row_owner = EMPTY_POS.to_string();
-        let first_row = &self.board[0];
+        let first_row = &self.positions[0];
         for col in first_row {
             if col.owner == EMPTY_POS {
                 // fail validation
@@ -100,7 +90,7 @@ impl CheckersBoard {
         // check that the last row has a distinct owner
         let mut check_last_row = false;
         let mut last_row_owner = EMPTY_POS.to_string();
-        let last_row = &self.board[self.board.len() - 1];
+        let last_row = &self.positions[self.positions.len() - 1];
         for col in last_row {
             if col.owner == EMPTY_POS {
                 // fail validation
@@ -122,20 +112,20 @@ impl CheckersBoard {
     }
 
     pub fn assign_side(&mut self, side: usize, owner: String) {
-        for row_index in 0..self.board.len() {
+        for row_index in 0..self.positions.len() {
             if row_index != side {
                 // if not side, skip logic
                 continue;
             }
-            for col_index in 0..self.board[row_index].len() {
-                self.board[row_index][col_index].owner = owner.clone();
+            for col_index in 0..self.positions[row_index].len() {
+                self.positions[row_index][col_index].owner = owner.clone();
             }
         }
     }
 
     fn get_player_piece(&self, player: String) -> Vec<CheckerPiece> {
         let mut player_pieces: Vec<CheckerPiece> = vec![];
-        for row in &self.board {
+        for row in &self.positions {
             for col in row {
                 if player == col.occupant.owner {
                     player_pieces.push(col.occupant.clone());
@@ -146,9 +136,9 @@ impl CheckersBoard {
     }
 
     pub fn is_board_pieces_ready(&self) -> bool {
-        let player1_pieces = self.get_player_piece(self.board[0][0].owner.clone());
+        let player1_pieces = self.get_player_piece(self.positions[0][0].owner.clone());
         let player2_pieces =
-            self.get_player_piece(self.board[self.board.len() - 1][0].owner.clone());
+            self.get_player_piece(self.positions[self.positions.len() - 1][0].owner.clone());
         if player1_pieces.len() != 12 || player2_pieces.len() != 12 {
             // initial piece count should equal 16
             return false;
@@ -164,48 +154,48 @@ impl CheckersBoard {
             return;
         }
         // update board with CheckersPieces
-        for row_index in 0..self.board.len() {
+        for row_index in 0..self.positions.len() {
             if row_index == 0 || row_index == 2 {
                 let mut col_index = 1;
-                while col_index < self.board[row_index].len() {
-                    self.board[row_index][col_index].occupant.owner = player1.clone();
-                    self.board[row_index][col_index].occupant.direction = 1;
+                while col_index < self.positions[row_index].len() {
+                    self.positions[row_index][col_index].occupant.owner = player1.clone();
+                    self.positions[row_index][col_index].occupant.direction = 1;
                     col_index += 2;
                 }
             } else if row_index == 1 {
                 let mut col_index = 0;
-                while col_index < self.board[row_index].len() {
-                    self.board[row_index][col_index].occupant.owner = player1.clone();
-                    self.board[row_index][col_index].occupant.direction = 1;
+                while col_index < self.positions[row_index].len() {
+                    self.positions[row_index][col_index].occupant.owner = player1.clone();
+                    self.positions[row_index][col_index].occupant.direction = 1;
                     col_index += 2;
                 }
             } else if row_index == 5 || row_index == 7 {
                 let mut col_index = 0;
-                while col_index < self.board[row_index].len() {
-                    self.board[row_index][col_index].occupant.owner = player2.clone();
-                    self.board[row_index][col_index].occupant.direction = -1;
+                while col_index < self.positions[row_index].len() {
+                    self.positions[row_index][col_index].occupant.owner = player2.clone();
+                    self.positions[row_index][col_index].occupant.direction = -1;
                     col_index += 2;
                 }
             } else if row_index == 6 {
                 let mut col_index = 1;
-                while col_index < self.board[row_index].len() {
-                    self.board[row_index][col_index].occupant.owner = player2.clone();
-                    self.board[row_index][col_index].occupant.direction = -1;
+                while col_index < self.positions[row_index].len() {
+                    self.positions[row_index][col_index].occupant.owner = player2.clone();
+                    self.positions[row_index][col_index].occupant.direction = -1;
                     col_index += 2;
                 }
             }
         }
     }
 
-    fn find_available_jumps(
+    pub fn find_available_jumps(
         &self,
-        player: String,
+        player: &String,
     ) -> (
         HashMap<(usize, usize), Vec<(usize, usize)>>,
         HashMap<(usize, usize), Vec<(usize, usize)>>,
     ) {
         // get pieces for player
-        let player_pieces = &self.get_player_piece(player);
+        let player_pieces = &self.get_player_piece(player.clone());
         let mut avail_jump_pos: HashMap<(usize, usize), Vec<(usize, usize)>> = HashMap::new();
         let mut avail_jump_landing_pos: HashMap<(usize, usize), Vec<(usize, usize)>> =
             HashMap::new();
@@ -231,8 +221,9 @@ impl CheckersBoard {
                     continue;
                 }
 
-                let jump_position = &self.board[jp_y.abs() as usize][jp_x.abs() as usize];
-                let jump_landing_position = &self.board[jlp_y.abs() as usize][jlp_x.abs() as usize];
+                let jump_position = &self.positions[jp_y.abs() as usize][jp_x.abs() as usize];
+                let jump_landing_position =
+                    &self.positions[jlp_y.abs() as usize][jlp_x.abs() as usize];
 
                 if jump_position.occupant.owner != "empty"
                     && jump_position.occupant.owner != piece.owner
@@ -256,6 +247,7 @@ impl CheckersBoard {
                 }
             }
 
+            // TODO
             // if piece.kinged {
             //     let positions: Vec<i32> = vec![-1, 1];
             //     for i in 0..positions.len() {
@@ -301,11 +293,11 @@ impl CheckersBoard {
         dest_cord: (usize, usize),
     ) -> bool {
         println!("Attempting to move {:?} to {:?}", piece_cord, dest_cord);
-        if piece_cord.0 >= self.board.len() || piece_cord.1 >= self.board.len() {
+        if piece_cord.0 >= self.positions.len() || piece_cord.1 >= self.positions.len() {
             return false;
         }
 
-        let selected_piece = self.board[piece_cord.0][piece_cord.1].occupant.clone();
+        let selected_piece = self.positions[piece_cord.0][piece_cord.1].occupant.clone();
         // let destination_piece = &self.board[dest_cord.0][dest_cord.1].occupant;
 
         // Invalid move if player doesn't own the piece_cord
@@ -313,7 +305,7 @@ impl CheckersBoard {
             return false;
         }
 
-        let (all_jumpable_pieces, all_available_jumps) = self.find_available_jumps(player);
+        let (all_jumpable_pieces, all_available_jumps) = self.find_available_jumps(&player);
         if all_available_jumps.contains_key(&piece_cord)
             && all_available_jumps
                 .get(&piece_cord)
@@ -327,12 +319,12 @@ impl CheckersBoard {
                 .position(|e| e == &dest_cord)
                 .unwrap();
             // prepare moving piece
-            let mut moving_piece = self.board[piece_cord.0][piece_cord.1].occupant.clone();
+            let mut moving_piece = self.positions[piece_cord.0][piece_cord.1].occupant.clone();
             moving_piece.loc = dest_cord;
             // remove starting loc
             self.remove_piece(piece_cord);
             // update landing loc
-            self.board[dest_cord.0][dest_cord.1].occupant = moving_piece;
+            self.positions[dest_cord.0][dest_cord.1].occupant = moving_piece;
             // remove jumped loc
             self.remove_piece(
                 *all_jumpable_pieces
@@ -358,9 +350,9 @@ impl CheckersBoard {
         if (add(piece_cord.0, selected_piece.direction)) == dest_cord.0
             && piece_cord.1.abs_diff(dest_cord.1) == 1
         {
-            let mut moving_piece = self.board[piece_cord.0][piece_cord.1].occupant.clone();
+            let mut moving_piece = self.positions[piece_cord.0][piece_cord.1].occupant.clone();
             moving_piece.loc = dest_cord;
-            self.board[dest_cord.0][dest_cord.1].occupant = moving_piece;
+            self.positions[dest_cord.0][dest_cord.1].occupant = moving_piece;
             self.remove_piece(piece_cord);
             return true;
         }
@@ -368,8 +360,9 @@ impl CheckersBoard {
         return false;
     }
 
-    fn remove_piece(&mut self, piece_cord: (usize, usize)) {
+    pub fn remove_piece(&mut self, piece_cord: (usize, usize)) {
         // reset original piece
-        self.board[piece_cord.0][piece_cord.1].occupant = CheckerPiece::init_with_loc(piece_cord);
+        self.positions[piece_cord.0][piece_cord.1].occupant =
+            CheckerPiece::init_with_loc(piece_cord);
     }
 }

@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'checkers-engine'",
+            "name": "Debug executable 'checkers-engine-rs'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=checkers-engine",
-                    "--package=checkers-engine"
+                    "--bin=checkers-engine-rs",
+                    "--package=checkers-engine-rs"
                 ],
                 "filter": {
-                    "name": "checkers-engine",
+                    "name": "checkers-engine-rs",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'checkers-engine'",
+            "name": "Debug unit tests in executable 'checkers-engine-rs'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=checkers-engine",
-                    "--package=checkers-engine"
+                    "--bin=checkers-engine-rs",
+                    "--package=checkers-engine-rs"
                 ],
                 "filter": {
-                    "name": "checkers-engine",
+                    "name": "checkers-engine-rs",
                     "kind": "bin"
                 }
             },
