@@ -36,6 +36,12 @@ impl CheckersBoard {
         return (self.positions.len() - 1) as i32;
     }
 
+    pub fn get_board_as_string(&self) -> String {
+        let board_string_list: Vec<String> = self.positions.iter().map(|c| c.iter().map(|d| d.clone().to_string() + ", ").collect()).collect();
+        let board_string: String = board_string_list.iter().map(|s| format!("[{}],", &s[0..s.len()-2])).collect();
+        return format!("[{}]", &board_string[0..board_string.len()-1]);
+    }
+
     pub fn to_string(&self) -> String {
         let mut board_string = String::new();
         for row in &self.positions {
@@ -111,7 +117,7 @@ impl CheckersBoard {
         return check_first_row && check_last_row;
     }
 
-    pub fn assign_side(&mut self, side: usize, owner: String) {
+    pub fn assign_side(&mut self, side: usize, owner: &String) {
         for row_index in 0..self.positions.len() {
             if row_index != side {
                 // if not side, skip logic
