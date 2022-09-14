@@ -2,11 +2,13 @@
 mod checkers_board;
 mod utils;
 
+use std::borrow::BorrowMut;
+use std::sync::{Mutex, Arc, MutexGuard};
 use checkers_board::CheckersBoard;
 use utils::add;
 
 // default empty position string
-const EMPTY_POS: &str = "empty";
+pub const EMPTY_POS: &str = "empty";
 
 #[derive(Debug)]
 pub struct Checkers {
@@ -29,32 +31,41 @@ impl Checkers {
         return checkers;
     }
 
-    pub fn init_with_players(player1: String, player2: String) -> Option<Checkers> {
-        let mut checkers = Checkers::init();
+    pub fn setup_players(&mut self, player1: String, player2: String) -> Option<bool>{
+        // let checkers = checkers_arc.lock().as_ref().unwrap();
         // setup players
-        checkers.set_player1(&player1);
-        checkers.set_player2(&player2);
+        self.set_player1(&player1);
+        self.set_player2(&player2);
         // set turn
-        checkers.set_turn(&checkers.get_player1());
+        let p1 = self.get_player1();
+        let p2 = self.get_player2();
+        self.set_turn(&p1);
         // setup player sides
-        checkers.assign_side(0, checkers.get_player1());
-        checkers.assign_side(7, checkers.get_player2());
+        self.assign_side(0, &p1);
+        self.assign_side(7, &p2);
         // init board pieces
-        checkers.initialize_board();
+        self.initialize_board();
 
         // ensure everything is setup properly
-        if checkers.get_player1() == EMPTY_POS || checkers.get_player2() == EMPTY_POS {
+        if self.get_player1() == EMPTY_POS || self.get_player2() == EMPTY_POS {
             return None;
         }
-        if !checkers.is_ready_to_start() {
+        if !self.is_ready_to_start() {
             return None;
         }
+
+        return Some(true);
 
         // play ball
-        return Some(checkers);
+        // return Some(*checkers);
     }
 
-    pub fn get_player1(&self) -> String {
+    // pub fn init_with_players(&self, player1: String, player2: String) -> Option<Checkers> {
+    //     let mut checkers: Checkers = Checkers::init();
+    //     return self.setup_players(checkers.borrow_mut(), player1, player2);
+    // }
+
+    pub fn get_player1(&mut self) -> String {
         self.player1.clone()
     }
 
@@ -90,13 +101,15 @@ impl Checkers {
         self.completed
     }
 
-    fn assign_side(&mut self, side: usize, owner: String) {
+    fn assign_side(&mut self, side: usize, owner: &String) {
         self.board.assign_side(side, owner);
     }
 
     fn initialize_board(&mut self) {
+        let arst1 = self.get_player1();
+        let arst2 = self.get_player2();
         self.board
-            .initialize_board_pieces(self.get_player1(), self.get_player2());
+            .initialize_board_pieces(arst1, arst2);
     }
 
     pub fn is_ready_to_start(&self) -> bool {
@@ -126,6 +139,11 @@ impl Checkers {
             .occupant
             .clone();
 
+        // Validate the player who sent a move cmd can take their turn
+        if !self.turn.eq(&player) {
+            return false;
+        }
+            
         // Invalid move if player doesn't own the piece_cord
         if selected_piece.owner != player {
             return false;
@@ -178,6 +196,7 @@ impl Checkers {
             && piece_cord.1.abs_diff(dest_cord.1) == 1
         {
             self.complete_piece_move(piece_cord, dest_cord, Option::None, true);
+            return true;
         }
 
         return false;
