@@ -37,9 +37,16 @@ impl CheckersBoard {
     }
 
     pub fn get_board_as_string(&self) -> String {
-        let board_string_list: Vec<String> = self.positions.iter().map(|c| c.iter().map(|d| d.clone().to_string() + ", ").collect()).collect();
-        let board_string: String = board_string_list.iter().map(|s| format!("[{}],", &s[0..s.len()-2])).collect();
-        return format!("[{}]", &board_string[0..board_string.len()-1]);
+        let board_string_list: Vec<String> = self
+            .positions
+            .iter()
+            .map(|c| c.iter().map(|d| d.clone().to_string() + ", ").collect())
+            .collect();
+        let board_string: String = board_string_list
+            .iter()
+            .map(|s| format!("[{}],", &s[0..s.len() - 2]))
+            .collect();
+        format!("[{}]", &board_string[0..board_string.len() - 1])
     }
 
     pub fn to_string(&self) -> String {

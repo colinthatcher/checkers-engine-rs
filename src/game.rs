@@ -2,9 +2,9 @@
 mod checkers_board;
 mod utils;
 
-use std::borrow::BorrowMut;
-use std::sync::{Mutex, Arc, MutexGuard};
 use checkers_board::CheckersBoard;
+use std::borrow::BorrowMut;
+use std::sync::{Arc, Mutex, MutexGuard};
 use utils::add;
 
 // default empty position string
@@ -31,7 +31,7 @@ impl Checkers {
         return checkers;
     }
 
-    pub fn setup_players(&mut self, player1: String, player2: String) -> Option<bool>{
+    pub fn setup_players(&mut self, player1: String, player2: String) -> Option<bool> {
         // let checkers = checkers_arc.lock().as_ref().unwrap();
         // setup players
         self.set_player1(&player1);
@@ -108,8 +108,7 @@ impl Checkers {
     fn initialize_board(&mut self) {
         let arst1 = self.get_player1();
         let arst2 = self.get_player2();
-        self.board
-            .initialize_board_pieces(arst1, arst2);
+        self.board.initialize_board_pieces(arst1, arst2);
     }
 
     pub fn is_ready_to_start(&self) -> bool {
@@ -143,7 +142,7 @@ impl Checkers {
         if !self.turn.eq(&player) {
             return false;
         }
-            
+
         // Invalid move if player doesn't own the piece_cord
         if selected_piece.owner != player {
             return false;
