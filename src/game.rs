@@ -17,6 +17,7 @@ pub struct Checkers {
     board: CheckersBoard,
     turn: String,
     completed: bool,
+    winner: String,
 }
 
 impl Checkers {
@@ -27,12 +28,12 @@ impl Checkers {
             board: CheckersBoard::init(),
             turn: EMPTY_POS.to_string(),
             completed: false,
+            winner: EMPTY_POS.to_string(),
         };
         return checkers;
     }
 
     pub fn setup_players(&mut self, player1: String, player2: String) -> Option<bool> {
-        // let checkers = checkers_arc.lock().as_ref().unwrap();
         // setup players
         self.set_player1(&player1);
         self.set_player2(&player2);
@@ -55,17 +56,14 @@ impl Checkers {
         }
 
         return Some(true);
-
-        // play ball
-        // return Some(*checkers);
     }
 
-    // pub fn init_with_players(&self, player1: String, player2: String) -> Option<Checkers> {
-    //     let mut checkers: Checkers = Checkers::init();
-    //     return self.setup_players(checkers.borrow_mut(), player1, player2);
-    // }
+    pub fn init_with_players(&mut self, player1: String, player2: String) -> Option<bool> {
+        let mut checkers: Checkers = Checkers::init();
+        return self.setup_players(player1, player2);
+    }
 
-    pub fn get_player1(&mut self) -> String {
+    pub fn get_player1(&self) -> String {
         self.player1.clone()
     }
 
@@ -93,12 +91,33 @@ impl Checkers {
         self.turn = player_name.to_lowercase().clone();
     }
 
-    pub fn get_board(&self) -> &CheckersBoard {
-        &self.board
+    pub fn get_board(&mut self) -> &mut CheckersBoard {
+        &mut self.board
     }
 
     pub fn is_completed(&self) -> bool {
-        self.completed
+        return self.completed;
+    }
+
+    fn set_completed(&mut self, completed: bool) {
+        self.completed = completed;
+    }
+
+    fn check_completed(&mut self) -> bool {
+        let p1 = self.board.get_player_pieces(self.get_player1().clone());
+        let p2 = self.board.get_player_pieces(self.get_player2().clone());
+        if p1.is_empty() {
+            self.completed = true;
+            self.winner = self.get_player2();
+        } else if p2.is_empty() {
+            self.completed = true;
+            self.winner = self.get_player1();
+        }
+        return self.is_completed();
+    }
+
+    pub fn get_winner(&self) -> String {
+        self.winner.clone()
     }
 
     fn assign_side(&mut self, side: usize, owner: &String) {
@@ -112,7 +131,9 @@ impl Checkers {
     }
 
     pub fn is_ready_to_start(&self) -> bool {
-        return self.board.is_board_ownership_ready() && self.board.is_board_pieces_ready();
+        return self.board.is_board_ownership_ready()
+            && self.board.is_board_pieces_ready()
+            && !self.is_completed();
     }
 
     /// Check that a submitted move is valid to make and make it.
@@ -129,6 +150,11 @@ impl Checkers {
         dest_cord: (usize, usize),
     ) -> bool {
         println!("Attempting to move {:?} to {:?}", piece_cord, dest_cord);
+
+        if self.is_completed() {
+            return false;
+        }
+
         if piece_cord.0 >= self.board.positions.len() || piece_cord.1 >= self.board.positions.len()
         {
             return false;
@@ -151,44 +177,56 @@ impl Checkers {
         let (all_jumpable_pieces, all_available_jumps) = self.board.find_available_jumps(&player);
 
         // if a jump is available and the destination didn't match any found the move isn't valid
-        if all_available_jumps.contains_key(&piece_cord)
-            && !all_available_jumps
-                .get(&piece_cord)
-                .unwrap()
-                .contains(&dest_cord)
-        {
+        if !all_available_jumps.is_empty() {
+            if !all_available_jumps.contains_key(&piece_cord) {
+                return false;
+            }
+            // if a jump is available and the destination didn't match any found the move isn't valid
+            if all_available_jumps.contains_key(&piece_cord)
+                && !all_available_jumps
+                    .get(&piece_cord)
+                    .unwrap()
+                    .contains(&dest_cord)
+            {
+                return false;
+            }
+
+            if all_available_jumps.contains_key(&piece_cord)
+                && all_available_jumps
+                    .get(&piece_cord)
+                    .unwrap()
+                    .contains(&dest_cord)
+            {
+                // find index of matched movement
+                let index = all_available_jumps
+                    .get(&piece_cord)
+                    .unwrap()
+                    .iter()
+                    .position(|e| e == &dest_cord)
+                    .unwrap();
+                self.complete_piece_move(
+                    piece_cord,
+                    dest_cord,
+                    all_jumpable_pieces.get(&piece_cord).unwrap().get(index),
+                    false, // TODO update this to determine if turn should be flipped
+                );
+                // check new state of board if a jump is available where the player went
+                let (all_jumpable_pieces2, all_available_jumps2) =
+                    self.board.find_available_jumps(&player);
+                if !all_available_jumps2.contains_key(&dest_cord) {
+                    // toggle turn there is no double jump available
+                    self.toggle_turn();
+                }
+
+                return true;
+            }
+
+            // hit weird case?
+            // shouldn't hit this but if we do just return false
             return false;
         }
 
-        if all_available_jumps.contains_key(&piece_cord)
-            && all_available_jumps
-                .get(&piece_cord)
-                .unwrap()
-                .contains(&dest_cord)
-        {
-            // find index of matched movement
-            let index = all_available_jumps
-                .get(&piece_cord)
-                .unwrap()
-                .iter()
-                .position(|e| e == &dest_cord)
-                .unwrap();
-            self.complete_piece_move(
-                piece_cord,
-                dest_cord,
-                all_jumpable_pieces.get(&piece_cord).unwrap().get(index),
-                false, // TODO update this to determine if turn should be flipped
-            );
-            // check new state of board if a jump is available where the player went
-            let (all_jumpable_pieces2, all_available_jumps2) =
-                self.board.find_available_jumps(&player);
-            if !all_available_jumps2.contains_key(&dest_cord) {
-                // toggle turn there is no double jump available
-                self.toggle_turn();
-            }
-
-            return true;
-        }
+        // no jumps available
 
         // IF VALID DIAGONAL MOVE THEN GET IT BROTHER
         if (add(piece_cord.0, selected_piece.direction)) == dest_cord.0
@@ -196,8 +234,15 @@ impl Checkers {
         {
             self.complete_piece_move(piece_cord, dest_cord, Option::None, true);
             return true;
+        } else if self.board.positions[piece_cord.0][piece_cord.1]
+            .occupant
+            .kinged
+            && (add(piece_cord.0, -selected_piece.direction)) == dest_cord.0
+            && piece_cord.1.abs_diff(dest_cord.1) == 1
+        {
+            self.complete_piece_move(piece_cord, dest_cord, Option::None, true);
+            return true;
         }
-
         return false;
     }
 
@@ -224,16 +269,31 @@ impl Checkers {
             .clone();
         moving_piece.loc = dest_cord;
         self.board.positions[dest_cord.0][dest_cord.1].occupant = moving_piece;
+        let copy_moved_piece = self.board.positions[dest_cord.0][dest_cord.1]
+            .occupant
+            .clone();
         self.board.remove_piece(piece_cord);
 
-        if jumped_piece_cord.is_some() {
-            self.board.remove_piece(*jumped_piece_cord.unwrap());
+        if let Some(jumped_piece_cord) = jumped_piece_cord {
+            self.board.remove_piece(*jumped_piece_cord);
+        }
+
+        // check if piece should get kinged
+        if !copy_moved_piece.kinged
+            && self.board.positions[dest_cord.0][dest_cord.1].owner != EMPTY_POS
+            && self.board.positions[dest_cord.0][dest_cord.1].owner != copy_moved_piece.owner
+        {
+            self.board.positions[dest_cord.0][dest_cord.1]
+                .occupant
+                .kinged = true;
+            println!("Kinged piece ({}, {})", dest_cord.0, dest_cord.1);
         }
 
         if toggle_turn {
             self.toggle_turn();
         }
 
+        self.check_completed();
         return true;
     }
 
@@ -244,8 +304,6 @@ impl Checkers {
             self.turn = self.player1.clone();
         }
     }
-
-    fn complete() {}
 
     pub fn print_board(&self) {
         println!("{}", self.board.to_string());

@@ -136,7 +136,7 @@ impl CheckersBoard {
         }
     }
 
-    fn get_player_piece(&self, player: String) -> Vec<CheckerPiece> {
+    pub fn get_player_pieces(&self, player: String) -> Vec<CheckerPiece> {
         let mut player_pieces: Vec<CheckerPiece> = vec![];
         for row in &self.positions {
             for col in row {
@@ -149,9 +149,9 @@ impl CheckersBoard {
     }
 
     pub fn is_board_pieces_ready(&self) -> bool {
-        let player1_pieces = self.get_player_piece(self.positions[0][0].owner.clone());
+        let player1_pieces = self.get_player_pieces(self.positions[0][0].owner.clone());
         let player2_pieces =
-            self.get_player_piece(self.positions[self.positions.len() - 1][0].owner.clone());
+            self.get_player_pieces(self.positions[self.positions.len() - 1][0].owner.clone());
         if player1_pieces.len() != 12 || player2_pieces.len() != 12 {
             // initial piece count should equal 16
             return false;
@@ -200,6 +200,43 @@ impl CheckersBoard {
         }
     }
 
+    /// Check if the given piece has an available jump in the given direction
+    fn check_if_move_is(
+        &self,
+        position_direction: &i32,
+        piece_loc: &(usize, usize),
+        piece_direction: &i32,
+        piece_owner: &String,
+    ) -> Option<(&Position, &Position)> {
+        // verify jump cords
+        let jp_y = piece_loc.0 as i32 + piece_direction;
+        let jp_x = piece_loc.1 as i32 + position_direction;
+        let jlp_y = piece_loc.0 as i32 + piece_direction * 2;
+        let jlp_x = piece_loc.1 as i32 + position_direction * 2;
+        if jp_y > self.get_board_max_cord()
+            || jp_x > self.get_board_max_cord()
+            || jlp_y > self.get_board_max_cord()
+            || jlp_x > self.get_board_max_cord()
+            || jp_y < 0
+            || jp_x < 0
+            || jlp_y < 0
+            || jlp_x < 0
+        {
+            return None;
+        }
+
+        let jump_position = &self.positions[jp_y.abs() as usize][jp_x.abs() as usize];
+        let jump_landing_position = &self.positions[jlp_y.abs() as usize][jlp_x.abs() as usize];
+
+        if jump_position.occupant.owner != "empty"
+            && jump_position.occupant.owner != *piece_owner
+            && jump_landing_position.occupant.owner == "empty"
+        {
+            return Some((jump_position, jump_landing_position));
+        }
+        return None;
+    }
+
     pub fn find_available_jumps(
         &self,
         player: &String,
@@ -208,86 +245,60 @@ impl CheckersBoard {
         HashMap<(usize, usize), Vec<(usize, usize)>>,
     ) {
         // get pieces for player
-        let player_pieces = &self.get_player_piece(player.clone());
+        let player_pieces = &self.get_player_pieces(player.clone());
         let mut avail_jump_pos: HashMap<(usize, usize), Vec<(usize, usize)>> = HashMap::new();
         let mut avail_jump_landing_pos: HashMap<(usize, usize), Vec<(usize, usize)>> =
             HashMap::new();
         for piece in player_pieces {
             let positions: Vec<i32> = vec![-1, 1];
-            for i in 0..positions.len() {
-                let position_direction = positions[i];
-
-                // verify jump cords
-                let jp_y = piece.loc.0 as i32 + piece.direction;
-                let jp_x = piece.loc.1 as i32 + position_direction;
-                let jlp_y = piece.loc.0 as i32 + piece.direction * 2;
-                let jlp_x = piece.loc.1 as i32 + position_direction * 2;
-                if jp_y > self.get_board_max_cord()
-                    || jp_x > self.get_board_max_cord()
-                    || jlp_y > self.get_board_max_cord()
-                    || jlp_x > self.get_board_max_cord()
-                    || jp_y < 0
-                    || jp_x < 0
-                    || jlp_y < 0
-                    || jlp_x < 0
-                {
-                    continue;
-                }
-
-                let jump_position = &self.positions[jp_y.abs() as usize][jp_x.abs() as usize];
-                let jump_landing_position =
-                    &self.positions[jlp_y.abs() as usize][jlp_x.abs() as usize];
-
-                if jump_position.occupant.owner != "empty"
-                    && jump_position.occupant.owner != piece.owner
-                    && jump_landing_position.occupant.owner == "empty"
-                {
+            for position_direction in positions {
+                if let Some((jp, jlp)) = self.check_if_move_is(
+                    &position_direction,
+                    &piece.loc,
+                    &piece.direction,
+                    &piece.owner,
+                ) {
                     // available_jump_list.push(jump_position.clone());
                     if !avail_jump_landing_pos.contains_key(&piece.loc) {
-                        avail_jump_pos.insert(piece.loc, vec![jump_position.occupant.loc.clone()]);
-                        avail_jump_landing_pos
-                            .insert(piece.loc, vec![jump_landing_position.occupant.loc.clone()]);
+                        avail_jump_pos.insert(piece.loc, vec![jp.occupant.loc.clone()]);
+                        avail_jump_landing_pos.insert(piece.loc, vec![jlp.occupant.loc.clone()]);
                     } else {
                         avail_jump_pos
                             .get_mut(&piece.loc)
                             .unwrap()
-                            .push(jump_landing_position.occupant.loc.clone());
+                            .push(jlp.occupant.loc.clone());
                         avail_jump_landing_pos
                             .get_mut(&piece.loc)
                             .unwrap()
-                            .push(jump_landing_position.occupant.loc.clone());
+                            .push(jlp.occupant.loc.clone());
+                    }
+                }
+                if piece.kinged {
+                    if let Some((jp, jlp)) = self.check_if_move_is(
+                        &position_direction,
+                        &piece.loc,
+                        &piece.direction.wrapping_neg(), // inverse direction b/ kinged
+                        &piece.owner,
+                    ) {
+                        // available_jump_list.push(jump_position.clone());
+                        if !avail_jump_landing_pos.contains_key(&piece.loc) {
+                            avail_jump_pos.insert(piece.loc, vec![jp.occupant.loc.clone()]);
+                            avail_jump_landing_pos
+                                .insert(piece.loc, vec![jlp.occupant.loc.clone()]);
+                        } else {
+                            avail_jump_pos
+                                .get_mut(&piece.loc)
+                                .unwrap()
+                                .push(jlp.occupant.loc.clone());
+                            avail_jump_landing_pos
+                                .get_mut(&piece.loc)
+                                .unwrap()
+                                .push(jlp.occupant.loc.clone());
+                        }
                     }
                 }
             }
-
-            // TODO
-            // if piece.kinged {
-            //     let positions: Vec<i32> = vec![-1, 1];
-            //     for i in 0..positions.len() {
-            //         let position_direction = positions[i];
-            //         let jump_position = &self.board[add(piece.loc.0, -piece.direction)]
-            //             [add(piece.loc.1, position_direction)];
-            //         let jump_landing_position = &self.board[add(piece.loc.0, -2 * piece.direction)]
-            //             [add(piece.loc.1, position_direction * 2)];
-
-            //         if jump_position.occupant.owner != "empty"
-            //             && jump_position.occupant.owner != piece.owner
-            //             && jump_landing_position.occupant.owner == "empty"
-            //         {
-            //             if !available_jump_map.contains_key(&piece.loc) {
-            //                 available_jump_map
-            //                     .insert(piece.loc, vec![jump_position.occupant.loc.clone()]);
-            //             } else {
-            //                 available_jump_map
-            //                     .get_mut(&piece.loc)
-            //                     .unwrap()
-            //                     .push(jump_position.occupant.loc.clone());
-            //             }
-            //         }
-            //     }
-            // }
         }
-
         return (avail_jump_pos, avail_jump_landing_pos);
     }
 
